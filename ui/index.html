@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <title>Food Expenditure Dashboard</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+</head>
+
+<body ng-app="FoodApp">
+    <div ng-controller="FoodController" class="container">
+        <div class="d-flex justify-content-center mt-5" ng-hide="totalCost || ordersError">
+            <div class="spinner-border text-warning mt-5" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <div class="justify-content-center mt-5" ng-show="ordersError">
+            <div class="alert alert-primary" role="alert"> Oops... error occurred !! </div><br>
+            <div class="alert alert-danger" role="alert"> {{ordersError}} </div>
+        </div>
+        <div class="row justify-content-center" ng-show="totalCost">
+            <div class="col-12 text-center mt-5">
+                <h1>FOOD APPS DASHBOARD</h1>
+                <h3>OVERALL EXPENDITURE: &#8377;{{totalCost}}</h3>
+                <span>( Since {{startedYear}} to {{recentYear}} )</span>
+            </div>
+            <div class="col-12 text-center mt-5">
+                <h5>YEARLY EXPENDITURE: &#8377;{{yearlyCost}}</h5>
+                <div ng-repeat="a in activeYears" class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" value={{a.year}} id={{a.year}}
+                        ng-click="updateTotalExpenditure(a.year)" checked>
+                    <label class="form-check-label" for={{a.year}}> {{a.year}} </label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <canvas id="totalExpenditure"></canvas>
+            </div>
+            <div class="col-12 text-center mt-5">
+                <h5>MONTHLY EXPENDITURE</h5>
+            </div>
+            <div class="col-12 text-center">
+                <div ng-repeat="a in activeYears" class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="inlineRadioOptions" id={{a.year}}
+                        value={{a.year}} ng-click="updateMonthExpenditure(a.year)" ng-checked="$last">
+                    <label class="form-check-label" for={{a.year}}>{{a.year}}</label>
+                </div>
+            </div>
+            <div class="col-sm-12 col-md-10 mb-5">
+                <canvas id="monthlyExpenditure"></canvas>
+            </div>
+        </div>
+    </div>
+    <script>
+        const CONSTANTS = {
+            VENDOR_SWIGGY: 'Swiggy',
+            VENDOR_ZOMATO: 'Zomato',
+            MONTHS: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+        };
+
+        let allOrders = [], ordersGroupedByYears, activeYears, totalExpenditureChart, monthlyExpenditureChart;
+        const groupBy = (arr, key) => arr.reduce((a, v) => (a[v[key]] = [...a[v[key]] || [], v], a), {});
+        const getMonthlyDataByVendor = (orders, vendor) => CONSTANTS.MONTHS.map(m => orders.filter(d => (vendor === d.vendor) && (m === d.month)).reduce((a, v) => a + v.cost, 0));
+        const getTotalCostDataByVendor = (orders, vendor) => orders.filter(d => vendor === d.vendor).reduce((a, v) => a + v.cost, 0);
+
+        const getMonthlyChartConfig = (orders) => {
+            const labels = CONSTANTS.MONTHS;
+            const data = {
+                labels: labels,
+                datasets: [{
+                    label: CONSTANTS.VENDOR_SWIGGY,
+                    backgroundColor: 'rgb(139,0,139)',
+                    data: getMonthlyDataByVendor(orders, CONSTANTS.VENDOR_SWIGGY),
+                },
+                {
+                    label: CONSTANTS.VENDOR_ZOMATO,
+                    backgroundColor: 'rgb(210,105,30)',
+                    data: getMonthlyDataByVendor(orders, CONSTANTS.VENDOR_ZOMATO),
+                }]
+            };
+
+            const customTooltip = (tooltipItems) => {
+                const vendors = tooltipItems[0].parsed._stacks.y;
+                const total = vendors[0] + vendors[1];
+                return 'Total: Rs.' + total;
+            };
+
+            return {
+                type: 'bar',
+                data: data,
+                options: {
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        tooltip: { callbacks: { footer: customTooltip } }
+                    },
+                    responsive: true,
+                    scales: { x: { stacked: true }, y: { stacked: true } }
+                }
+            };
+        };
+
+
+        const getTotalChartConfig = (orders) => {
+            const labels = CONSTANTS.MONTHS;
+            const data = {
+                labels: [CONSTANTS.VENDOR_SWIGGY, CONSTANTS.VENDOR_ZOMATO],
+                datasets: [{
+                    label: 'Total spendings',
+                    backgroundColor: ['rgb(255,165,0)', 'rgb(173,255,47)'],
+                    data: [getTotalCostDataByVendor(orders, CONSTANTS.VENDOR_SWIGGY), getTotalCostDataByVendor(orders, CONSTANTS.VENDOR_ZOMATO)],
+                }]
+            };
+
+            const customTooltip = (tooltipItems) => {
+                const total = tooltipItems[0].dataset.data.reduce((a, v) => a + v);
+                return 'Total: Rs.' + total;
+            };
+
+            return {
+                type: 'pie',
+                data: data,
+                options: {
+                    responsive: true,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { callbacks: { footer: customTooltip } }
+                    }
+                },
+            };
+        };
+
+
+        const FoodApp = angular.module('FoodApp', []);
+        FoodApp.controller('FoodController', function ($scope, $http) {
+
+            $http.get('/orders')
+                .then((response) => {
+                    allOrders = response.data;
+                    ordersGroupedByYears = groupBy(allOrders, 'year');
+                    activeYears = Object.keys(ordersGroupedByYears).sort();
+                    $scope.startedYear = activeYears[0];
+                    $scope.recentYear = activeYears[activeYears.length - 1];
+                    recentYearOrders = ordersGroupedByYears[$scope.recentYear];
+
+                    $scope.totalCost = allOrders.reduce((a, v) => a + v.cost, 0);
+                    $scope.yearlyCost = $scope.totalCost;
+                    $scope.activeYears = activeYears.map(y => ({ year: y, selected: true }));
+
+                    totalExpenditureChart = new Chart(document.getElementById('totalExpenditure'), getTotalChartConfig(allOrders));
+                    monthlyExpenditureChart = new Chart(document.getElementById('monthlyExpenditure'), getMonthlyChartConfig(recentYearOrders));
+                }, (error) => {
+                    $scope.ordersError = error;
+                });
+
+            $scope.updateTotalExpenditure = (year) => {
+                $scope.activeYears = $scope.activeYears.map(y => (y.year === year && (y.selected = !y.selected), y));
+                const selectedYears = $scope.activeYears.filter(y => y.selected).map(y => y.year);
+                const ordersForselectedYears = allOrders.filter(o => selectedYears.includes(o.year.toString()));
+                totalExpenditureChart.data.datasets[0].data = [getTotalCostDataByVendor(ordersForselectedYears, CONSTANTS.VENDOR_SWIGGY), getTotalCostDataByVendor(ordersForselectedYears, CONSTANTS.VENDOR_ZOMATO)];
+
+                totalExpenditureChart.update();
+
+                $scope.yearlyCost = ordersForselectedYears.reduce((a, v) => a + v.cost, 0);
+            };
+
+            $scope.updateMonthExpenditure = (year) => {
+                const selectedOrders = ordersGroupedByYears[year];
+                monthlyExpenditureChart.data.datasets[0].data = getMonthlyDataByVendor(selectedOrders, CONSTANTS.VENDOR_SWIGGY);
+                monthlyExpenditureChart.data.datasets[1].data = getMonthlyDataByVendor(selectedOrders, CONSTANTS.VENDOR_ZOMATO);
+
+                monthlyExpenditureChart.update();
+            };
+        });
+    </script>
+</body>
+
+<body>
+</body>
+
+</html>
