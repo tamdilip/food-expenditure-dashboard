@@ -19,6 +19,6 @@ A minimal web app dashboard to track my personal expenditures on online food ord
 
 
 ### Dashboard
-![Image of dashboard](https://raw.githubusercontent.com/tamdilip/whatsapp-amazonconnect-chat/master/docs/WhatsApp-AmazonConnect.jpg)
+![Image of dashboard](https://raw.githubusercontent.com/tamdilip/food-expenditure-dashboard/main/docs/dashboard.png)
 
 **Happy coding :) !!**
