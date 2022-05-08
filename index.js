@@ -3,7 +3,7 @@ const fs = require('fs').promises;
 const { getOrders } = require('./api/routes/orders');
 const { encryptAccount } = require('./api/routes/account');
 
-const SERVER_PORT = 8000;
+const SERVER_PORT = process.env.PORT || 8000;
 
 const requestListener = async (req, res) => {
     const { url } = req;
