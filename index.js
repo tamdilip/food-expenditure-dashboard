@@ -1,7 +1,7 @@
 const http = require('http');
 const fs = require('fs').promises;
-const getSwiggyExpenditure = require('./api/swiggy');
-const getZomatoExpenditure = require('./api/zomato');
+const { getOrders } = require('./api/routes/orders');
+const { encryptAccount } = require('./api/routes/account');
 
 const SERVER_PORT = 8000;
 
@@ -9,18 +9,11 @@ const requestListener = async (req, res) => {
     const { url } = req;
     console.log(`Incoming request: ${url}`);
 
-    if (url === '/orders') {
-        try {
-            const swiggyExpenditure = await getSwiggyExpenditure();
-            const zomatoExpenditure = await getZomatoExpenditure();
-
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify([...swiggyExpenditure, ...zomatoExpenditure]));
-        } catch (error) {
-            res.writeHead(500);
-            res.end(error.message);
-        }
-    } else {
+    if (url === '/account')
+        encryptAccount(req, res);
+    else if (url === '/orders')
+        getOrders(req, res);
+    else {
         fs.readFile(__dirname + `/ui${url === '/' ? '/index.html' : url}`)
             .then(html => {
                 res.writeHead(200, { 'Content-Type': 'text/html' });
