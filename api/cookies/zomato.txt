@@ -1,2 +1,0 @@
-// Update this file completely with Zomato cookie attached with API call when you visit orders page in web ui - https://www.zomato.com/webroutes/user/orders?page=
-// Navigation:: Zomato -> Profile -> Order history -> Scroll & Paginate to 2nd page -> 'cookie' from request header of above API

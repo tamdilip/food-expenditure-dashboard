@@ -9,11 +9,11 @@ Since there is no official SDK support available for either of these apps, curre
 ```sh
         $ git clone https://github.com/tamdilip/food-expenditure-dashboard.git
         $ cd food-expenditure-dashboard
-        $ node index.js
+        $ npm start
 ```
 
 #### Pre-requisite
-* For authentication, update the respective apps cookies under the folder - `./api/cookies/*.txt`
+* For authentication, update the respective apps cookies in app config `⚙️` - 
     
     > Navigation:: Swiggy -> Profile -> Orders -> 'cookie' from request header of API - https://www.swiggy.com/dapi/order/all?order_id=
     
